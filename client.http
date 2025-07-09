@@ -1,0 +1,8 @@
+@baseurl = httl+//localhost:3333
+
+### health
+
+GET {{baseurl}}/health
+
+###get rooms
+GET {{baseurl}}/rooms
