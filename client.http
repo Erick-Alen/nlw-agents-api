@@ -1,8 +1,37 @@
-@baseurl = httl+//localhost:3333
+@baseurl = http://localhost:3333
 
 ### health
-
+# @name health
 GET {{baseurl}}/health
 
 ###get rooms
+# @name getRooms
 GET {{baseurl}}/rooms
+
+###create room
+# Create Room
+# @name createRoom
+POST {{baseurl}}/rooms
+Content-Type: application/json
+
+{
+  "name": "Sala de matemática",
+  "description": "Sala para matemática"
+}
+
+###
+# @roomId = {{getRooms.response.body.$.[0].id}}
+@roomId = {{createRoom.response.body.id}}
+
+### get room
+# @name getRoomQuestions
+GET {{baseurl}}/rooms/{{roomId}}/questions
+
+### create question room
+# @name createQuestion
+POST {{baseurl}}/rooms/{{roomId}}/questions
+Content-Type: application/json
+
+{
+  "question": "Qual é a fórmula de báskara?"
+}

@@ -3,6 +3,9 @@ import fastify from 'fastify';
 import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod';
 import { env } from './config/env.ts';
 import { getRoomsRoute } from './http/routes/get-rooms.ts';
+import { createRoomRoute } from './http/routes/create-room.ts';
+import { getRoomQuestionsRoute } from './http/routes/get-room-questions.ts';
+import { createQuestionRoute } from './http/routes/create-question.ts';
 
 const app  =fastify().withTypeProvider<ZodTypeProvider>();
 
@@ -20,12 +23,15 @@ app.get('/health', () => {
 })
 
 app.register(getRoomsRoute)
+app.register(createRoomRoute)
+app.register(getRoomQuestionsRoute)
+app.register(createQuestionRoute);
 
 app.listen({
   port: env.PORT,
 }).then(() => {
   console.log('HTTP server running on http://localhost:3333');
 }).catch((err) => {
-  console.error('Error starting server:', err);
+  console.error("Error starting server:", err);
   process.exit(1);
 });
