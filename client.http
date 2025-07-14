@@ -29,9 +29,9 @@ GET {{baseurl}}/rooms/{{roomId}}/questions
 
 ### create question room
 # @name createQuestion
-POST {{baseurl}}/rooms/{{roomId}}/questions
+POST {{baseurl}}/rooms/65dc35aa-280f-41fb-8917-c246da6a3f3d/questions
 Content-Type: application/json
 
 {
-  "question": "Qual é a fórmula de báskara?"
+  "question": "O que é React?"
 }
