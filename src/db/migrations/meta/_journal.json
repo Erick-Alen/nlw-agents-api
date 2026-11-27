@@ -29,6 +29,13 @@
       "when": 1752442423114,
       "tag": "0003_glamorous_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795786827159,
+      "tag": "0004_scope_audio_embeddings",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import type { FastifyPluginCallbackZod } from 'fastify-type-provider-zod';
 import z from 'zod';
-import { generateEmbeddings, transcribeAudio } from '../../services/gemini.ts';
+import { ai } from '../../services/ai/index.ts';
 import { db } from '../../db/connection.ts';
 import { schema } from '../../db/schema/index.ts';
 
@@ -20,27 +20,20 @@ export const uploadAudioRoute: FastifyPluginCallbackZod = (app) => {
       if (!audio) {
         throw new Error('Audio file is required');
       }
-      // audio transcription
-
-      const audioAsBase64 = (await audio.toBuffer()).toString('base64');
-
-      const transcriptedAudio = await transcribeAudio(
-        audioAsBase64,
-        audio.mimetype
-      );
-
-      // generate the semantic vector/embeddings
-
-      const embeddings = await generateEmbeddings(transcriptedAudio);
-
-      // store the vector in the database
+      const transcription = await ai.transcribe({
+        bytes: await audio.toBuffer(),
+        filename: audio.filename,
+        mimeType: audio.mimetype,
+      });
+      const { space, values } = await ai.embed(transcription, 'document');
 
       const result = await db
         .insert(schema.audioChunks)
         .values({
           roomId,
-          transcription: transcriptedAudio,
-          embeddings,
+          transcription,
+          embeddingModel: space,
+          embeddings: values,
         })
         .returning();
       const chunk = result[0];
