@@ -1,8 +1,8 @@
 import type { FastifyPluginCallbackZod } from 'fastify-type-provider-zod';
 import z from 'zod';
 import { schema } from '../../db/schema/index.ts';
-import { generateAnswer, generateEmbeddings } from '../../services/gemini.ts';
-import { and, eq, sql } from 'drizzle-orm';
+import { ai } from '../../services/ai/index.ts';
+import { and, cosineDistance, desc, eq, gt, sql } from 'drizzle-orm';
 import { db } from '../../db/connection.ts';
 
 export const createQuestionRoute: FastifyPluginCallbackZod = (app) => {
@@ -22,34 +22,28 @@ export const createQuestionRoute: FastifyPluginCallbackZod = (app) => {
       const { roomId } = request.params;
       const { question } = request.body;
 
-      const embeddings = await generateEmbeddings(question);
-      const stringifiedEmbeddings = `[${embeddings.join(',')}]`;
-      // find similar audio chunks in the room by 70%
+      const { space, values } = await ai.embed(question, 'query');
+      const similarity = sql<number>`1 - (${cosineDistance(schema.audioChunks.embeddings, values)})`;
       const chunks = await db
-        .select({
-          id: schema.audioChunks.id,
-          transcription: schema.audioChunks.transcription,
-          similarity: sql<number>`1 - (${schema.audioChunks.embeddings} <=> ${stringifiedEmbeddings}::vector)`,
-        })
+        .select({ transcription: schema.audioChunks.transcription })
         .from(schema.audioChunks)
         .where(
           and(
             eq(schema.audioChunks.roomId, roomId),
-            sql`1- (${schema.audioChunks.embeddings} <=> ${stringifiedEmbeddings}::vector) > 0.7`
+            eq(schema.audioChunks.embeddingModel, space),
+            gt(similarity, 0.7)
           )
         )
-        .orderBy(
-          sql`1- (${schema.audioChunks.embeddings} <=> ${stringifiedEmbeddings}::vector) > 0.7`
-        )
+        .orderBy(desc(similarity))
         .limit(5);
-      let answer: string | null = null;
+
       if (chunks.length === 0) {
         return reply.status(404).send({
           message: 'No similar audio chunks found',
         });
       }
-      const transcriptions = chunks.map((chunk) => chunk.transcription);
-      answer = await generateAnswer(question, transcriptions);
+
+      const answer = await ai.answer(question, chunks.map((chunk) => chunk.transcription));
       const result = await db
         .insert(schema.questions)
         .values({
